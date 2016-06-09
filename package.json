@@ -1,0 +1,24 @@
+{
+  "name": "allex_httprequestlowlevellib",
+  "version": "1.0.0",
+  "description": "JavaScript implementation of http request",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/allex-lowlevel-libs/httprequest.git"
+  },
+  "keywords": [
+    "ecosystem:AllexJS",
+    "http",
+    "request"
+  ],
+  "author": "Andrija Petrovic <andrija.hers@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/allex-lowlevel-libs/httprequest/issues"
+  },
+  "homepage": "https://github.com/allex-lowlevel-libs/httprequest#readme"
+}
