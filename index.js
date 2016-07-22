@@ -122,6 +122,9 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
       }
     }
 
+    if ( isFunction(options.onError) ) {
+      xhr.onerror = options.onError;
+    }
     xhr.open(method, url, true);
 
     if (method === 'POST' || method === 'PUT') {
