@@ -1,6 +1,6 @@
 {
   "name": "allex_httprequestlowlevellib",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "JavaScript implementation of http request",
   "main": "index.js",
   "scripts": {
