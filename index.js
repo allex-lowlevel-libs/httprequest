@@ -164,14 +164,21 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
   function nodejs_request(url, options) {
     var prep = prepareRequest(url, options),
       parsed = require('url').parse(prep.url),
-      resphandler;
+      resphandler, mod;
     if (prep.onData) {
       resphandler = onResponseBinary.bind(null, prep.onData, prep.onComplete);
     } else {
       resphandler = onResponse.bind(null, prep.onComplete);
     }
-    //console.log('request for', parsed);
-    require('http').request(parsed, resphandler).
+    try {
+      mod = require(parsed.protocol.substr(0, parsed.protocol.length-1));
+    } catch(e) {
+      nodejs_request_error(url, prep.onError, e);
+    }
+    if (!mod) {
+      return;
+    }
+    mod.request(parsed, resphandler).
       on('error', nodejs_request_error.bind(null, url, prep.onError)).
       end();
   }
