@@ -131,8 +131,14 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     }
 
-    xhr.send(body);
-    return xhr;
+    try {
+      xhr.send(body);
+      return xhr;
+    } catch(e) {
+      if (options.onError) {
+        options.onError(e);
+      }
+    }
   }
 
   function onResponse(cb, res) {
