@@ -85,6 +85,10 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
       body: body
     };
 
+    if (options.headers) {
+      ret.headers = options.headers;
+    }
+
     if (options.hasOwnProperty('onError')) {
       ret.onError = options.onError;
     }
@@ -170,7 +174,9 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
   function nodejs_request(url, options) {
     var prep = prepareRequest(url, options),
       parsed = require('url').parse(prep.url),
-      resphandler, mod;
+      resphandler, mod, body, req;
+    parsed.method = prep.method;
+    parsed.headers = prep.headers;
     if (prep.onData) {
       resphandler = onResponseBinary.bind(null, prep.onData, prep.onComplete);
     } else {
@@ -184,9 +190,22 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     if (!mod) {
       return;
     }
-    mod.request(parsed, resphandler).
-      on('error', nodejs_request_error.bind(null, url, prep.onError)).
-      end();
+    if (parsed.method === 'POST') {
+      body = options.parameters ? JSON.stringify(options.parameters) : null;
+      parsed.headers = parsed.headers || {};
+      parsed.headers['Content-Type'] = 'application/json';
+        //'Content-Type': 'application/x-www-form-urlencoded'
+      if (body) {
+        parsed.headers['Content-Length'] = Buffer.byteLength(body);
+      }
+    }
+    req = mod.request(parsed, resphandler).
+      on('error', nodejs_request_error.bind(null, url, prep.onError));
+    if (body) {
+      console.log('writing', body);
+      req.write(body);
+    }
+    req.end();
   }
 
   function request(url, options) {
