@@ -57,6 +57,21 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     }
   }
 
+  function progressreporter (progressobj, progresscb) {
+    var progress;
+    if (progressobj && 
+      Number.isInteger(progressobj.total) &&
+      Number.isInteger(progressobj.current) &&
+      Number.isInteger(progressobj.progress)
+    ) {
+      progress = Math.round(progressobj.current*100/progressobj.total);
+      if (progress !== progressobj.progress) {
+        progressobj.progress = progress;
+        progresscb(progress);
+      }
+    }
+  }
+
   function prepareRequest (url, options) {
 
     options  = options || {};
@@ -94,6 +109,9 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     }
     if (options.hasOwnProperty('onData')) {
       ret.onData = options.onData;
+    }
+    if (options.hasOwnProperty('onProgress')) {
+      ret.onProgress = options.onProgress;
     }
     return ret;
 
@@ -145,23 +163,77 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     }
   }
 
-  function onResponse(cb, res) {
+  function cookieExtractor (cookiestring) {
+    var scindex = cookiestring.indexOf(';');
+    if (scindex>=0) {
+      return cookiestring.substring(0,scindex);
+    } else {
+      return cookiestring;
+    }
+  }
+
+  function extractCookies (setcookiestring) {
+    if (isFunction(setcookiestring.map)) {
+      return setcookiestring.map(cookieExtractor);
+    }
+    return [];
+  }
+
+  function onResponse(cb, progresscb, res) {
     var ret = {
       statusCode: res.statusCode,
+      headers: res.headers,
       data: ''
     };
+    if (res.headers && res.headers['set-cookie']) {
+      ret.cookies = extractCookies(res.headers['set-cookie']);
+    }
     res.setEncoding('utf8');
     res.on('data', function(chunk){
+      if (progresscb) {
+        ret.current += chunk.length;
+        progressreporter(ret, progresscb);
+      }
       ret.data += chunk;
     });
     res.on('end', function(){
       cb(ret);
+      ret = null;
+      progresscb = null;
     });
+    if (progresscb) {
+      ret.total = parseInt(res.headers['content-length']);
+      ret.current = 0;
+      ret.progress = 0;
+      console.log('total', ret.total);
+    }
   }
 
-  function onResponseBinary(ondata, oncomplete, res) {
-    res.on('data', ondata);
-    res.on('end', oncomplete);
+  function onResponseBinary(ondata, oncomplete, onprogress, res) {
+    var ret;
+    if (onprogress) {
+      ret = {
+        total: parseInt(res.headers['content-length']),
+        current: 0,
+        progress: 0
+      };
+      res.on('data', function (data) {
+        ret.current += data.length;
+        progressreporter(ret, onprogress);
+        ondata(data);
+      });
+      res.on('end', function () {
+        oncomplete();
+        ret = null;
+        progressreporter = null;
+        ondata = null;
+        oncomplete = null;
+      });
+      res.on('end', oncomplete);
+    } else {
+      res.on('data', ondata);
+      res.on('end', oncomplete);
+    }
   }
 
   function nodejs_request_error(url, errcb, err) {
@@ -178,9 +250,9 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     parsed.method = prep.method;
     parsed.headers = prep.headers;
     if (prep.onData) {
-      resphandler = onResponseBinary.bind(null, prep.onData, prep.onComplete);
+      resphandler = onResponseBinary.bind(null, prep.onData, prep.onComplete, prep.onProgress);
     } else {
-      resphandler = onResponse.bind(null, prep.onComplete);
+      resphandler = onResponse.bind(null, prep.onComplete, prep.onProgress);
     }
     try {
       mod = require(parsed.protocol.substr(0, parsed.protocol.length-1));
@@ -202,7 +274,7 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     req = mod.request(parsed, resphandler).
       on('error', nodejs_request_error.bind(null, url, prep.onError));
     if (body) {
-      console.log('writing', body);
+      //console.log('writing', body);
       req.write(body);
     }
     req.end();
