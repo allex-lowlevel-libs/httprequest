@@ -145,11 +145,31 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     }
   }
 
+  function cookieExtractor (cookiestring) {
+    var scindex = cookiestring.indexOf(';');
+    if (scindex>=0) {
+      return cookiestring.substring(0,scindex);
+    } else {
+      return cookiestring;
+    }
+  }
+
+  function extractCookies (setcookiestring) {
+    if (isFunction(setcookiestring.map)) {
+      return setcookiestring.map(cookieExtractor);
+    }
+    return [];
+  }
+
   function onResponse(cb, res) {
     var ret = {
       statusCode: res.statusCode,
+      headers: res.headers,
       data: ''
     };
+    if (res.headers && res.headers['set-cookie']) {
+      ret.cookies = extractCookies(res.headers['set-cookie']);
+    }
     res.setEncoding('utf8');
     res.on('data', function(chunk){
       ret.data += chunk;
@@ -202,7 +222,7 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     req = mod.request(parsed, resphandler).
       on('error', nodejs_request_error.bind(null, url, prep.onError));
     if (body) {
-      console.log('writing', body);
+      //console.log('writing', body);
       req.write(body);
     }
     req.end();
