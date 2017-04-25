@@ -61,12 +61,13 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     var progress;
     if (progressobj && 
       Number.isInteger(progressobj.total) &&
-      Number.isInteger(progressobj.current) &&
-      Number.isInteger(progressobj.progress)
+      Number.isInteger(progressobj.loaded)
     ) {
-      progress = Math.round(progressobj.current*100/progressobj.total);
+      progress = Math.round(progressobj.loaded*100/progressobj.total);
       if (progress !== progressobj.progress) {
-        progressobj.progress = progress;
+        if (Number.isInteger(progressobj.progress)) {
+          progressobj.progress = progress;
+        }
         progresscb(progress);
       }
     }
@@ -117,6 +118,12 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
 
   }
 
+  function browser_progressReporter (progresscb, progressevent) {
+    if (progressevent.lengthComputable) {
+      progressreporter(progressevent, progresscb);
+    }
+  }
+
   function browser_request(url, options) {
 
     options  = options || {};
@@ -146,6 +153,9 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
 
     if ( isFunction(options.onError) ) {
       xhr.onerror = options.onError;
+    }
+    if ( isFunction(options.onProgress) ) {
+      xhr.onprogress = browser_progressReporter.bind(null, options.onProgress);
     }
     xhr.open(method, url, true);
 
@@ -191,7 +201,7 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     res.setEncoding('utf8');
     res.on('data', function(chunk){
       if (progresscb) {
-        ret.current += chunk.length;
+        ret.loaded += chunk.length;
         progressreporter(ret, progresscb);
       }
       ret.data += chunk;
@@ -203,7 +213,7 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     });
     if (progresscb) {
       ret.total = parseInt(res.headers['content-length']);
-      ret.current = 0;
+      ret.loaded = 0;
       ret.progress = 0;
     }
   }
@@ -213,11 +223,11 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     if (onprogress) {
       ret = {
         total: parseInt(res.headers['content-length']),
-        current: 0,
+        loaded: 0,
         progress: 0
       };
       res.on('data', function (data) {
-        ret.current += data.length;
+        ret.loaded += data.length;
         progressreporter(ret, onprogress);
         ondata(data);
       });
