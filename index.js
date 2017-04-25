@@ -205,7 +205,6 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
       ret.total = parseInt(res.headers['content-length']);
       ret.current = 0;
       ret.progress = 0;
-      console.log('total', ret.total);
     }
   }
 

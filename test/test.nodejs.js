@@ -15,7 +15,7 @@ describe('NodeJS test', function () {
       onProgress: console.log.bind(console, 'progress'),
       //onData: function () {},
       onComplete: function (data) {
-        console.log(typeof data, 'downloaded');
+        console.log('downloaded', data.statusCode, data.headers, data.cookies);
       }
     });
   });
