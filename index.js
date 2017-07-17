@@ -46,6 +46,22 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     }
   };
 
+  function ampersandjoiner (joinobj, val, name) {
+    if (joinobj.str && joinobj.str.length) {
+      joinobj.str += '&';
+    }
+    joinobj.str += (name+'='+val);
+  }
+
+  function ampersandjoinedhash (hash) {
+    var joinobj = {str: ''}, ret;
+    traverseShallow(hash, ampersandjoiner.bind(null, joinobj));
+    ret = joinobj.str;
+    joinobj = null;
+    console.log(hash, '=>', ret);
+    return ret;
+  }
+
   function myCompleter(){
     this.apply(null, arguments);
   }
@@ -272,10 +288,13 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
       return;
     }
     if (parsed.method === 'POST') {
-      body = options.parameters ? JSON.stringify(options.parameters) : null;
       parsed.headers = parsed.headers || {};
-      parsed.headers['Content-Type'] = 'application/json';
-        //'Content-Type': 'application/x-www-form-urlencoded'
+      if (parsed.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+        body = options.parameters ? ampersandjoinedhash(options.parameters) : null;
+      } else {
+        body = options.parameters ? JSON.stringify(options.parameters) : null;
+        parsed.headers['Content-Type'] = 'application/json';
+      }
       if (body) {
         parsed.headers['Content-Length'] = Buffer.byteLength(body);
       }
