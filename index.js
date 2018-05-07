@@ -1,5 +1,7 @@
 function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
 
+  var keepAliveAgent;
+
   function addParamsToUrl(url, param) {
     return url + (/\?/.test(url) ? '&' : '?') + param;
   }
@@ -299,6 +301,10 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
         parsed.headers['Content-Length'] = Buffer.byteLength(body);
       }
     }
+    if (!keepAliveAgent) {
+      keepAliveAgent = new mod.Agent({keepAlive: true});
+    }
+    parsed.agent = keepAliveAgent;
     req = mod.request(parsed, resphandler).
       on('error', nodejs_request_error.bind(null, url, prep.onError));
     if (body) {
