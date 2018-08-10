@@ -60,7 +60,7 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     traverseShallow(hash, ampersandjoiner.bind(null, joinobj));
     ret = joinobj.str;
     joinobj = null;
-    console.log(hash, '=>', ret);
+    //console.log(hash, '=>', ret);
     return ret;
   }
 
