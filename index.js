@@ -1,6 +1,6 @@
 function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
 
-  var keepAliveAgent;
+  var keepAliveAgents = {};
 
   function addParamsToUrl(url, param) {
     return url + (/\?/.test(url) ? '&' : '?') + param;
@@ -273,7 +273,7 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
   function nodejs_request(url, options) {
     var prep = prepareRequest(url, options),
       parsed = require('url').parse(prep.url),
-      resphandler, mod, body, req;
+      resphandler, modname, mod, body, req;
     parsed.method = prep.method;
     parsed.headers = prep.headers;
     if (prep.onData) {
@@ -282,7 +282,8 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
       resphandler = onResponse.bind(null, prep.onComplete, prep.onProgress);
     }
     try {
-      mod = require(parsed.protocol.substr(0, parsed.protocol.length-1));
+      modname = parsed.protocol.substr(0, parsed.protocol.length-1);
+      mod = require(modname);
     } catch(e) {
       nodejs_request_error(url, prep.onError, e);
     }
@@ -301,10 +302,10 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
         parsed.headers['Content-Length'] = Buffer.byteLength(body);
       }
     }
-    if (!keepAliveAgent) {
-      keepAliveAgent = new mod.Agent({keepAlive: true});
+    if (!keepAliveAgents[modname]) {
+      keepAliveAgents[modname] = new mod.Agent({keepAlive: true});
     }
-    parsed.agent = keepAliveAgent;
+    parsed.agent = keepAliveAgents[modname];
     req = mod.request(parsed, resphandler).
       on('error', nodejs_request_error.bind(null, url, prep.onError));
     if (body) {

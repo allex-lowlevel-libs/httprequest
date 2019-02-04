@@ -6,16 +6,24 @@ var expect = require('chai').expect,
   request = require('..')(objmanip.traverseShallow, checkftions.isFunction, functionmanip.dummyFunc)
   ;
 
-
-describe('NodeJS test', function () {
-  it('Download progress', function (done) {
-    this.timeout(10000000);
-    request('https://www.advancedinstaller.com/downloads/advinst.msi', {
+describe('Multiple protocol test', function () {
+  it('http', function (done) {
+    request('http://google.com', {
       onError: console.error.bind(console, 'error'),
       onProgress: console.log.bind(console, 'progress'),
-      //onData: function () {},
       onComplete: function (data) {
-        console.log('downloaded', data.statusCode, data.headers, data.cookies);
+        console.log('got', data);
+        done();
+      }
+    });
+  });
+  it('https', function (done) {
+    request('https://google.com', {
+      onError: console.error.bind(console, 'error'),
+      onProgress: console.log.bind(console, 'progress'),
+      onComplete: function (data) {
+        console.log('got', data);
+        done();
       }
     });
   });
