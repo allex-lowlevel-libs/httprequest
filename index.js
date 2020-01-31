@@ -142,6 +142,14 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     }
   }
 
+  function appendParam (fd, param, name) {
+    if (param instanceof window.Blob /*&& param.name*/ && param.size) {
+      fd.append(name, param, param.name);
+      return;
+    }
+    fd.append(name, param);
+  }
+
   function browser_request(url, options) {
 
     options  = options || {};
@@ -150,7 +158,8 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
         onComplete = isFunction(options.onComplete) ? myCompleter.bind(options.onComplete) : dummyFunc,
         xhr = makeXHR(),
         rand = Date.now() + ~~(Math.random()*10000),
-        body;
+        body,
+        fd;
 
     xhr.onreadystatechange = xhrOnReadyStateChange.bind(xhr,onComplete);
 
@@ -178,7 +187,10 @@ function makeHTTPRequest(traverseShallow, isFunction, dummyFunc){
     xhr.open(method, url, true);
 
     if (method === 'POST' || method === 'PUT') {
-      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      fd = new FormData();
+      traverseShallow(options.parameters,appendParam.bind(null, fd));
+      body = fd;
+      fd = null;
     }
 
     try {
